@@ -67,12 +67,14 @@
   (let [k (checkpoint-name group-id topic kpartition)]
     (try
       (let [offset (inc (:offset (read-commit log k)))]
+        (println "offset" offset)
         (seek-to-offset! consumer {:topic topic :partition kpartition} offset))
       (catch org.apache.zookeeper.KeeperException$NoNodeException nne
         (try
          ;; Try again using 0.9.9.0/0.9.10.0 checkpoint method
          ;; This allows users to transition to new checkpoint from old method
          (let [offset (inc (:offset (extensions/read-chunk log :chunk k)))]
+        (println "offset" offset)
            (seek-to-offset! consumer {:topic topic :partition kpartition} offset))
          (catch org.apache.zookeeper.KeeperException$NoNodeException nne
            (if-let [start-offsets (:kafka/start-offsets task-map)]
@@ -85,6 +87,7 @@
              (cp/seek-to-beginning-offset! consumer [{:topic topic :partition kpartition}]))))))))
 
 (defn seek-offset! [log consumer group-id topic kpartition task-map]
+  (println "Froce reset is " (:kafka/force-reset? task-map))
   (if (and (:kafka/force-reset? task-map)
            (not (:kafka/start-offset task-map)))
     (let [policy (:kafka/offset-reset task-map)]
@@ -105,7 +108,7 @@
 ;; kafka operations
 
 (defn id->broker [zk-addr]
-  (with-open [zk-utils (k-admin/make-zk-utils {:servers zk-addr} false)]
+  (with-open [zk-utils ^kafka.utils.ZkUtils (k-admin/make-zk-utils {:servers zk-addr} false)]
     (reduce
      (fn [result {:keys [id endpoints]}]
        (assoc
@@ -139,7 +142,7 @@
       (Thread/sleep commit-interval)
       (when-let [offset (highest-offset-to-commit @pending-commits)]
         (let [k (checkpoint-name group-id topic kpartition)
-              data {:offset offset}]
+              data {:offset (- offset 10)}]
           (commit! log data k)
           (swap! pending-commits (fn [coll] (remove (fn [k] (<= k offset)) coll)))))
       (when-not (Thread/interrupted) 
@@ -256,6 +259,7 @@
           n-retries (take-values! batch retry-ch batch-size)
           _ (take-records! batch @iter segment-fn (- max-segments n-retries))
           batch (persistent! batch)]
+      (.println (System/out) (str "READ MESSAGES" batch))
       (swap! pending-messages add-pending-batch batch)
       (when (and (all-done? batch)
                  (all-done? (vals @pending-messages))
@@ -321,7 +325,7 @@
 (defn close-read-messages
   [{:keys [kafka/retry-ch kafka/commit-fut kafka/consumer] :as pipeline} lifecycle]
   (future-cancel commit-fut)
-  (.close consumer)
+  (.close ^franzy.clients.consumer.client.FranzConsumer consumer)
   (close! retry-ch)
   (while (a/poll! retry-ch))
   {})
@@ -335,7 +339,7 @@
 
 (defn close-write-resources
   [event lifecycle]
-  (.close (:kafka/producer event)))
+  (.close ^franzy.clients.producer.client.FranzProducer (:kafka/producer event)))
 
 (defn- message->producer-record
   [serializer-fn topic m]

@@ -1,21 +1,15 @@
-(ns onyx.plugin.input-test
+(ns onyx.plugin.input-delete-test
   (:require [clojure.core.async :refer [<!! go pipe]]
             [clojure.core.async.lab :refer [spool]]
             [clojure.test :refer [deftest is]]
             [com.stuartsierra.component :as component]
             [franzy.admin.zookeeper.client :as k-admin]
             [franzy.admin.cluster :as k-cluster]
-
-            ;; added
             [franzy.admin.topics :as k-topics]
-            [franzy.clients.consumer.protocols :refer [poll! assign-partitions!]]
-            [franzy.clients.consumer.client :as c]
-
-            [franzy.admin.configuration :as k-config]
             [franzy.serialization.serializers :refer [byte-array-serializer]]
             [franzy.serialization.deserializers :refer [byte-array-deserializer]]
             [franzy.clients.producer.client :as producer]
-            [franzy.clients.producer.protocols :refer [send-sync! send-async!]]
+            [franzy.clients.producer.protocols :refer [send-sync!]]
             [onyx.test-helper :refer [with-test-env]]
             [onyx.job :refer [add-task]]
             [onyx.kafka.embedded-server :as ke]
@@ -47,7 +41,7 @@
                                     :kafka/group-id "onyx-consumer"
                                     :kafka/zookeeper zk-address
                                     :kafka/offset-reset :smallest
-                                    :kafka/force-reset? false
+                                    :kafka/force-reset? true
                                     :kafka/deserializer-fn :onyx.tasks.kafka/deserialize-message-edn
                                     :onyx/min-peers 2
                                     :onyx/max-peers 2}
@@ -67,13 +61,7 @@
                                           :zookeeper.connect zookeeper
                                           :controlled.shutdown.enable false}))
         zk-utils (k-admin/make-zk-utils {:servers [zookeeper]} false)
-        #_ (k-topics/create-topic! zk-utils topic 2 1
-                                  {;;cover tracks
-                                   :cleanup.policy      :delete
-                                   ;;24 hours to abuse user trust
-                                   :delete.retention.ms 40000
-                                   }
-                                  )
+        _ (k-topics/create-topic! zk-utils topic 2)
 
         producer-config {:bootstrap.servers ["127.0.0.1:9092"]}
         key-serializer (byte-array-serializer)
@@ -81,63 +69,17 @@
 
     (with-open [producer1 (producer/make-producer producer-config key-serializer value-serializer)]
       (with-open [producer2 (producer/make-producer producer-config key-serializer value-serializer)]
-        (doseq [x (range 3000)] ;0 1 2
+        (doseq [x (range 3)] ;0 1 2
           (send-sync! producer1 (ProducerRecord. topic nil nil (.getBytes (pr-str {:n x})))))
-        (doseq [x (range 3000)] ;3 4 5
+        (doseq [x (range 3)] ;3 4 5
           (send-sync! producer2 (ProducerRecord. topic nil nil (.getBytes (pr-str {:n (+ 3 x)})))))))
     kafka-server))
 
-(comment 
- (def topictest "wheee3")
-
- (let [zk-utils (k-admin/make-zk-utils {:servers ["127.0.0.1:2181"]} false)
-       topic-name topictest
-       partition-count 1 ;;obviously
-       replication-factor 1 ;;tri-force of replicas
-       topic-config         {;;cover tracks
-                             :cleanup.policy      :delete
-                             ;;24 hours to abuse user trust
-                             :delete.retention.ms 86400000
-                             ;;fsync after every 10 messages, living dangerously
-                             :flush.messages      10
-                             ;;fsync on some nerdy interval
-                             :flush.ms            32768}]
-   (k-topics/create-topic! zk-utils topic-name partition-count replication-factor topic-config))
-
- (k-config/update-topic-config! (k-admin/make-zk-utils {:servers ["127.0.0.1:2181"]} false)
-                                topictest
-                                {:delete.retention.ms 100000})
-
- (let [zk-utils (k-admin/make-zk-utils {:servers ["127.0.0.1:2181"]} false)
-       producer-config {:bootstrap.servers ["127.0.0.1:9092"]}
-       key-serializer (byte-array-serializer)
-       value-serializer (byte-array-serializer)]
-   (with-open [producer1 (producer/make-producer producer-config key-serializer value-serializer)]
-     (doseq [x (range 300000)] ;0 1 2
-       (send-sync! producer1 (ProducerRecord. topictest nil nil (.getBytes (pr-str {:n x})))))))
-
- (defn- make-consumer
-   []
-   (c/make-consumer
-    {:bootstrap.servers ["127.0.0.1:9092"]
-     :group.id "onyx-consumer"
-     :auto.offset.reset :earliest
-     :receive.buffer.bytes 65536
-     :enable.auto.commit false}
-    (byte-array-deserializer)
-    (byte-array-deserializer)))
-
- (def consss (make-consumer))
- (assign-partitions! consss [{:topic topictest :partition 0}])
- (into [] (poll! consss {:poll-timeout-ms 5000}))) 
-
-(deftest kafka-input-test
-  (let [test-topic (str "onyx-test-aiijkss" #_(java.util.UUID/randomUUID))
+(deftest kafka-input-delete-test
+  (let [test-topic (str "onyx-test-" (java.util.UUID/randomUUID))
         _ (println "Using topic" test-topic)
         {:keys [test-config env-config peer-config]} (onyx.plugin.test-utils/read-config)
-        tenancy-id ;(str (java.util.UUID/randomUUID)) 
-        "aaadess"
-        _ (println peer-config)
+        tenancy-id (str (java.util.UUID/randomUUID))
         env-config (assoc env-config :onyx/tenancy-id tenancy-id)
         peer-config (assoc peer-config :onyx/tenancy-id tenancy-id)
         zk-address (get-in peer-config [:zookeeper/address])
@@ -147,11 +89,8 @@
     (try
       (with-test-env [test-env [4 env-config peer-config]]
         (onyx.test-helper/validate-enough-peers! test-env job)
-        (println (:embedded-kafka? test-config))
         (reset! mock (mock-kafka test-topic zk-address (:embedded-kafka? test-config)))
-        (let [job-id (:job-id (onyx.api/submit-job peer-config job))]
-          (is (= 15
-                 (reduce + (mapv :n (onyx.plugin.core-async/take-segments! out 10000)))))
-          (onyx.api/kill-job peer-config job-id)
-          ))
+        (onyx.api/submit-job peer-config job)
+        (is (= 15
+               (reduce + (mapv :n (onyx.plugin.core-async/take-segments! out 10000))))))
       (finally (swap! mock component/stop)))))

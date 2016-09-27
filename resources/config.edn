@@ -1,15 +1,23 @@
-{:env-config
+{:test-config
+ {:embedded-kafka? #cond {:default true
+                          :test true
+                          :ci false}}
+ :env-config
  {:onyx/tenancy-id #env [ONYX_ID "testcluster"]
   :zookeeper/address #cond {:default #env [ZOOKEEPER "zookeeper"]
+                            :bench "127.0.0.1:2181"
+                            :ci "127.0.0.1:2181"
                             :test "127.0.0.1:2188"}
-  :zookeeper/server? #cond {:default false
+  :zookeeper/server? #cond {:default true
+                            :ci false
                             :test true}
   :zookeeper.server/port 2188}
  :peer-config
  {:onyx/tenancy-id                       #env [ONYX_ID "testcluster"]
   :zookeeper/address                     #cond {:default #env [ZOOKEEPER "zookeeper"]
                                                 :bench "127.0.0.1:2181"
-                                                :test "127.0.0.1:2188"}
+                                                :ci "127.0.0.1:2181"
+                                                :test #env [ZOOKEEPER "127.0.0.1:2188"]}
   :onyx.peer/job-scheduler               :onyx.job-scheduler/greedy
   :onyx.peer/zookeeper-timeout           60000
   :onyx.messaging/allow-short-circuit?   #cond {:default true
@@ -20,4 +28,5 @@
   :onyx.messaging/peer-port              40200
   :onyx.messaging.aeron/embedded-driver? #cond {:default false
                                                 :bench true
+                                                :ci true
                                                 :test true}}}
