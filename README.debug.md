@@ -1,5 +1,5 @@
 
-[//]: # ({:display :header, :valid-structure? true, :all-params ({:display :catalog-entry, :model :onyx.plugin.kafka/read-messages, :width 80, :merge-additions {:kafka/zookeeper "127.0.0.1:2181", :onyx/plugin :onyx.plugin.kafka/read-messages, :onyx/medium :kafka, :kafka/offset-reset :smallest, :kafka/receive-buffer-bytes 65536, :kafka/force-reset? true, :onyx/batch-timeout 50, :onyx/type :input, :onyx/name :read-messages, :kafka/topic "my topic", :kafka/group-id "onyx-consumer", :onyx/max-peers "<<NUMBER-OF-PARTITIONS>>", :onyx/min-peers "<<NUMBER-OF-PARTITIONS>>", :onyx/doc "Reads messages from a Kafka topic", :onyx/batch-size 100, :kafka/deserializer-fn :my.ns/deserializer-fn, :kafka/wrap-with-metadata? false, :kafka/commit-interval 500}} {:display :lifecycle-entry, :model :onyx.plugin.kafka/read-messages} {:display :attribute-table, :model :onyx.plugin.kafka/read-messages, :columns :columns/default} {:display :catalog-entry, :model :onyx.plugin.kafka/write-messages, :width 200, :merge-additions {:kafka/zookeeper "127.0.0.1:2181", :onyx/plugin :onyx.plugin.kafka/write-messages, :onyx/medium :kafka, :kafka/request-size 307200, :onyx/type :output, :onyx/name :write-messages, :kafka/topic "topic", :kafka/serializer-fn :my.ns/serializer-fn, :onyx/doc "Writes messages to a Kafka topic", :onyx/batch-size batch-size}} {:display :lifecycle-entry, :model :onyx.plugin.kafka/write-messages} {:display :attribute-table, :model :onyx.plugin.kafka/write-messages, :columns :columns/default})})
+[//]: # ({:display :header, :valid-structure? true, :all-params ({:display :catalog-entry, :model :onyx.plugin.kafka/read-messages, :width 80, :merge-additions {:onyx/plugin :onyx.plugin.kafka/read-messages, :onyx/medium :kafka, :kafka/force-reset? true, :onyx/type :input, :onyx/name :read-messages, :onyx/max-peers <<number-of-partitions>>, :onyx/min-peers <<number-of-partitions>>, :kafka/consumer-opts :gen-doc-ignore, :onyx/doc "Reads messages from a Kafka topic", :kafka/start-offsets {p1 offset1, p2 offset2}, :onyx/batch-size 100}} {:display :lifecycle-entry, :model :onyx.plugin.kafka/read-messages} {:display :attribute-table, :model :onyx.plugin.kafka/read-messages, :columns :columns/default} {:display :catalog-entry, :model :onyx.plugin.kafka/write-messages, :width 200, :merge-additions {:kafka/zookeeper "127.0.0.1:2181", :onyx/plugin :onyx.plugin.kafka/write-messages, :onyx/medium :kafka, :kafka/request-size 307200, :onyx/type :output, :onyx/name :write-messages, :kafka/topic "topic", :kafka/serializer-fn :my.ns/serializer-fn, :onyx/doc "Writes messages to a Kafka topic", :onyx/batch-size batch-size}} {:display :lifecycle-entry, :model :onyx.plugin.kafka/write-messages} {:display :attribute-table, :model :onyx.plugin.kafka/write-messages, :columns :columns/default})})
 ## onyx-kafka
 
 Onyx plugin providing read and write facilities for Kafka. This plugin automatically discovers broker locations from ZooKeeper and updates the consumers when there is a broker failover.
@@ -38,26 +38,25 @@ is read under this circumstance.
 Catalog entry:
 
 
-[//]: # ({:display :catalog-entry, :model :onyx.plugin.kafka/read-messages, :width 80, :merge-additions {:kafka/zookeeper "127.0.0.1:2181", :onyx/plugin :onyx.plugin.kafka/read-messages, :onyx/medium :kafka, :kafka/offset-reset :smallest, :kafka/receive-buffer-bytes 65536, :kafka/force-reset? true, :onyx/batch-timeout 50, :onyx/type :input, :onyx/name :read-messages, :kafka/topic "my topic", :kafka/group-id "onyx-consumer", :onyx/max-peers "<<NUMBER-OF-PARTITIONS>>", :onyx/min-peers "<<NUMBER-OF-PARTITIONS>>", :onyx/doc "Reads messages from a Kafka topic", :onyx/batch-size 100, :kafka/deserializer-fn :my.ns/deserializer-fn, :kafka/wrap-with-metadata? false, :kafka/commit-interval 500}})
+[//]: # ({:display :catalog-entry, :model :onyx.plugin.kafka/read-messages, :width 80, :merge-additions {:onyx/plugin :onyx.plugin.kafka/read-messages, :onyx/medium :kafka, :kafka/force-reset? true, :onyx/type :input, :onyx/name :read-messages, :onyx/max-peers <<number-of-partitions>>, :onyx/min-peers <<number-of-partitions>>, :kafka/consumer-opts :gen-doc-ignore, :onyx/doc "Reads messages from a Kafka topic", :kafka/start-offsets {p1 offset1, p2 offset2}, :onyx/batch-size 100}})
 ```clojure
 {:onyx/name :read-messages,
  :onyx/plugin :onyx.plugin.kafka/read-messages,
  :onyx/type :input,
  :onyx/medium :kafka,
- :kafka/topic "my topic",
- :kafka/group-id "onyx-consumer",
- :kafka/zookeeper "127.0.0.1:2181",
- :kafka/offset-reset :smallest,
+ :kafka/topic "The topic name to read from.",
+ :kafka/partition "Partition to read from if auto-assignment is not used.",
+ :kafka/group-id "The consumer identity to store in ZooKeeper.",
+ :kafka/zookeeper "The ZooKeeper connection string.",
+ :kafka/offset-reset :earliest,
  :kafka/force-reset? true,
  :kafka/deserializer-fn :my.ns/deserializer-fn,
  :kafka/receive-buffer-bytes 65536,
- :kafka/commit-interval 500,
+ :kafka/commit-interval 2000,
  :kafka/wrap-with-metadata? false,
- :kafka/fetch-size 307200,
- :kafka/chan-capacity 1000,
- :onyx/batch-timeout 50,
- :onyx/min-peers "<<NUMBER-OF-PARTITIONS>>",
- :onyx/max-peers "<<NUMBER-OF-PARTITIONS>>",
+ :kafka/start-offsets {p1 offset1, p2 offset2},
+ :onyx/min-peers <<number-of-partitions>>,
+ :onyx/max-peers <<number-of-partitions>>,
  :onyx/batch-size 100,
  :onyx/doc "Reads messages from a Kafka topic"}
 ```
@@ -68,8 +67,7 @@ Lifecycle entry:
 [//]: # ({:display :lifecycle-entry, :model :onyx.plugin.kafka/read-messages})
 ```clojure
 [{:task.lifecycle/name :read-messages,
-  :lifecycle/calls
-  :onyx.plugin.kafka/read-messages-calls}]
+  :lifecycle/calls :onyx.plugin.kafka/read-messages-calls}]
 ```
 
 
@@ -112,9 +110,11 @@ Catalog entry:
  :onyx/medium :kafka,
  :kafka/topic "topic",
  :kafka/zookeeper "127.0.0.1:2181",
+ :kafka/partition "Partition to write to, if you do not wish messages to be auto allocated to partitions. Must either be supplied in the task map, or all messages should contain a `:partition` key.",
  :kafka/serializer-fn :my.ns/serializer-fn,
  :kafka/request-size 307200,
  :kafka/no-seal? false,
+ :kafka/producer-opts :gen-doc-please-handle-in-merge-additions,
  :onyx/batch-size batch-size,
  :onyx/doc "Writes messages to a Kafka topic"}
 ```
@@ -125,8 +125,7 @@ Lifecycle entry:
 [//]: # ({:display :lifecycle-entry, :model :onyx.plugin.kafka/write-messages})
 ```clojure
 [{:task.lifecycle/name :write-messages,
-  :lifecycle/calls
-  :onyx.plugin.kafka/write-messages-calls}]
+  :lifecycle/calls :onyx.plugin.kafka/write-messages-calls}]
 ```
 
 Segments supplied to a `:onyx.plugin.kafka/write-messages` task should be in in
