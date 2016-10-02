@@ -38,4 +38,13 @@
                                          "-XX:+UnlockCommercialFeatures" 
                                          "-XX:+FlightRecorder"
                                          "-XX:+UnlockDiagnosticVMOptions"
-                                         "-XX:StartFlightRecording=duration=240s,filename=localrecording.jfr"]}})
+                                         "-XX:StartFlightRecording=duration=240s,filename=localrecording.jfr"]}
+             :dev-workaround-circleci-java-opts
+             {:dependencies [^{:voom {:repo "https://github.com/colinhicks/onyx-gen-doc.git" :branch "master"}}
+                             [org.onyxplatform/onyx-gen-doc "0.9.12-SNAPSHOT"]]
+              :plugins [^{:voom {:repo "https://github.com/colinhicks/onyx-gen-doc.git" :branch "master"}}
+                        [org.onyxplatform/lein-onyx-gen-doc "0.9.12-SNAPSHOT"]]
+              :onyx-gen-doc {:information-model onyx.kafka.information-model/model
+                             :in-path "README.template.md"
+                             :out-path "README.debug.md"
+                             :verbose? true}}})
