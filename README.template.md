@@ -35,41 +35,38 @@ is read under this circumstance.
 
 Catalog entry:
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display `:catalog-entry`
-:model :onyx.plugin.kafka/read-messages
-:width 80
-:merge-additions
-```clojure
-{:onyx/name :read-messages
- :onyx/plugin :onyx.plugin.kafka/read-messages
- :onyx/type :input
- :onyx/medium :kafka
- :kafka/force-reset? true
- :kafka/consumer-opts :gen-doc-ignore
- :kafka/start-offsets {p1 offset1, p2 offset2}
- :onyx/min-peers <<number-of-partitions>>
- :onyx/max-peers <<number-of-partitions>>
- :onyx/batch-size 100
- :onyx/doc "Reads messages from a Kafka topic"}
+```onyx-gen-doc
+{:display :catalog-entry
+ :model :onyx.plugin.kafka/read-messages
+ :width 80
+ :merge-additions
+  {:onyx/name :read-messages
+   :onyx/plugin :onyx.plugin.kafka/read-messages
+   :onyx/type :input
+   :onyx/medium :kafka
+   :kafka/force-reset? true
+   :kafka/consumer-opts :gen-doc-ignore
+   :kafka/start-offsets {p1 offset1, p2 offset2}
+   :onyx/min-peers <<number-of-partitions>>
+   :onyx/max-peers <<number-of-partitions>>
+   :onyx/batch-size 100
+   :onyx/doc "Reads messages from a Kafka topic"}}
 ```
-::::::::::::::::::::::::::::::::::::::::::::::::::
 
 Lifecycle entry:
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display :lifecycle-entry
-:model :onyx.plugin.kafka/read-messages
-::::::::::::::::::::::::::::::::::::::::::::::::::
-
+```onyx-gen-doc
+{:display :lifecycle-entry
+ :model :onyx.plugin.kafka/read-messages}
+```
 
 ###### Attributes
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display :attribute-table
-:model :onyx.plugin.kafka/read-messages
-:columns :columns/default
-::::::::::::::::::::::::::::::::::::::::::::::::::
+```onyx-gen-doc
+{:display :attribute-table
+ :model :onyx.plugin.kafka/read-messages
+ :columns :columns/default}
+```
 
 ##### write-messages
 
@@ -77,37 +74,35 @@ Writes segments to a Kafka topic using the Kafka "new" producer.
 
 Catalog entry:
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display :catalog-entry
-:model :onyx.plugin.kafka/write-messages
-:width 200
-:merge-additions
-```clojure
-{:onyx/name :write-messages
- :onyx/plugin :onyx.plugin.kafka/write-messages
- :onyx/type :output
- :onyx/medium :kafka
- :kafka/topic "topic"
- :kafka/zookeeper "127.0.0.1:2181"
- :kafka/serializer-fn :my.ns/serializer-fn
- :kafka/request-size 307200
- :onyx/batch-size batch-size
- :onyx/doc "Writes messages to a Kafka topic"}
+```onyx-gen-doc
+{:display :catalog-entry,
+ :model :onyx.plugin.kafka/write-messages,
+ :width 200,
+ :merge-additions
+ {:kafka/zookeeper "127.0.0.1:2181",
+  :onyx/plugin :onyx.plugin.kafka/write-messages,
+  :onyx/medium :kafka,
+  :kafka/request-size 307200,
+  :onyx/type :output,
+  :onyx/name :write-messages,
+  :kafka/topic "topic",
+  :kafka/serializer-fn :my.ns/serializer-fn,
+  :onyx/doc "Writes messages to a Kafka topic",
+  :onyx/batch-size batch-size}}
 ```
-::::::::::::::::::::::::::::::::::::::::::::::::::
 
 Lifecycle entry:
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display :lifecycle-entry
-:model :onyx.plugin.kafka/write-messages
-::::::::::::::::::::::::::::::::::::::::::::::::::
+```onyx-gen-doc
+{:display :lifecycle-entry
+ :model :onyx.plugin.kafka/write-messages}
+```
 
 Segments supplied to a `:onyx.plugin.kafka/write-messages` task should be in in
 the following form: `{:message message-body}` with optional partition, topic and
 key values.
 
-``` clj
+```clojure
 {:message message-body
  :key optional-key
  :partition optional-partition
@@ -116,11 +111,11 @@ key values.
 
 ###### Attributes
 
-::::::::::::::::::::::::::::::::::::::::::::::::::
-:display :attribute-table
-:model :onyx.plugin.kafka/write-messages
-:columns :columns/default
-::::::::::::::::::::::::::::::::::::::::::::::::::
+```onyx-gen-doc
+{:display :attribute-table
+ :model :onyx.plugin.kafka/write-messages
+ :columns :columns/default}
+```
 
 #### Test Utilities
 
